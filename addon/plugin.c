@@ -17,7 +17,11 @@ struct plugin_t {
 #endif
 	char error[128];
 
-	void  (*plugin_call)(void* plug, plugin_param_t* in, plugin_callback_t cb);
+	void (*plugin_call)(void* plug, plugin_param_t* in, void* context,
+		void(*cb)(void* context, plugin_param_t* param));
+
+	void (*plugin_set_notification)(void* plugin, void* context,
+		void(*cb)(void* context, plugin_param_t* param));
 
 };
 typedef struct plugin_t plugin_t;
@@ -46,9 +50,17 @@ void _GetLastError(plugin_t* plugin) {
 
 #endif
 
-#define PLUG_CLOSE( plug) plug_close(plug);plug=NULL;
 
-void* plugin_open(const char* path, plugin_param_t* err) {
+void plugin_close(void* plug) {
+	if (plug) {
+		FreeLibrary(plug);
+		free(plug);
+	}
+}
+
+#define PLUG_CLOSE( plug) plugin_close(plug);plug=NULL;
+
+void* plugin_open(const char* path) {
 	plugin_t* plug = malloc(sizeof(plugin_t));
 	memset(plug, 0, sizeof(plugin_t));
 
@@ -56,18 +68,18 @@ void* plugin_open(const char* path, plugin_param_t* err) {
 	plug->handle = LoadLibrary(path);
 	if (plug->handle == NULL) {
 		_GetLastError(plug);
-		if (err) {
-			strncpy(err->data, plug->error, err->size);
-		}
+//		if (err) {
+//			strncpy(err->data, plug->error, err->size);
+//		}
 		free(plug);
 		return NULL;
 	}
 	typedef void(*FUNCADDR)();
 	plug->plugin_call = (FUNCADDR)(GetProcAddress(plug->handle, "plug_call"));
 	if (!plug->plugin_call) {
-		if (err) {
-			strncpy(err->data, "no 'plug_call' symbol in plug",err->size);
-		}
+//		if (err) {
+//			strncpy(err->data, "no 'plug_call' symbol in plug",err->size);
+//		}
 		PLUG_CLOSE(plug);
 		return NULL;
 	}
@@ -78,14 +90,13 @@ void* plugin_open(const char* path, plugin_param_t* err) {
 	return plug;
 }
 
-
-void plug_close(void* plug) {
-	if (plug) {
-		FreeLibrary(plug);
-		free(plug);
-	}
+void  plugin_call(void* plugin, plugin_param_t* in, void* context, 
+	              void(*cb)(void* context, plugin_param_t* param,int status)) {
+	((plugin_t*)plugin)->plugin_call(plugin, in, context,cb);
 }
 
-void  plug_call(void* plug, const char* buf, int size, plug_callback_t returns) {
-		((plug_t*)plug)->plug_call(buf, size, returns);
+void  plugin_set_notification(void* plugin, void* context, 
+	                          void(*cb)(void* context, plugin_param_t* param)) {
+
+	((plugin_t*)plugin)->plugin_set_notification(plugin, context, cb);
 }
