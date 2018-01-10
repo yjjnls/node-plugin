@@ -1,5 +1,5 @@
-var Plugin = require('node_plugin').Plugin
-var obj = new Plugin('bin/example.dll')
+var Plugin = require('./node_plugin').Plugin
+var obj = new Plugin('./bin/example.dll')
 //
 //var addon = require('./build/Release/node_plugin');
 //
