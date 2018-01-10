@@ -1,29 +1,28 @@
-var Plugin = require('./node_plugin').Plugin
-var obj = new Plugin('./bin/example.dll')
-//
-//var addon = require('./build/Release/node_plugin');
-//
-//console.log("~~~~~~~~~~");
-//var obj = new addon.Plugin('e:/github.com/node-plugin/plugin/build/Debug/sample.dll');
-//
-//var   data = Uint8Array.from("1234");
-//const param  = Buffer.from("123");//data.buffer);
-//
-//console.log("@",param)
-//
-//console.log("*************************");
-//
-//for( var i = 0;i<100;i++){
-//	obj.call( param, function( buf){
-//		console.log( buf.toString());
-//
-//	});
-//}
-//console.log("*************************");
-//
+try {
+	var node_plugin = require('node_plugin')
+}
+catch(e){
+	var node_plugin = require('../index')
+}
+
+console.log(node_plugin.EXAMPLE)
+var obj = new node_plugin.Plugin(node_plugin.EXAMPLE)
+
+const param  = Buffer.from("123");//data.buffer);
+
+console.log("*************************");
+
+for( var i = 0;i<100;i++){
+	obj.call( param, function( buf){
+		console.log( buf.toString());
+
+	});
+}
+console.log("*************************");
+
 ////obj = null
-//setTimeout( function(){
-//	obj.release();
-//	obj = null;
-//	console.log("--- END ---");
-//},1000);
+setTimeout( function(){
+	obj.release();
+	obj = null;
+	console.log("--- END ---");
+},500);
