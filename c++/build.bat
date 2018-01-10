@@ -2,7 +2,9 @@ set __DIR=%~dp0
 
 REM build plugin
 pushd %__DIR%\addon
-
+if not exist %__DIR%\bin (
+   mkdir %__DIR%\bin
+)
 call node-gyp configure --msvs_version=2015
 call node-gyp build
 copy build\Release\node_plugin.node ..\..\bin\windows-x64.node
