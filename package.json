@@ -1,0 +1,22 @@
+{
+  "name": "node-plugin",
+  "version": "0.1.3",
+  "description": "Node call plugin (dynamic lib) utils",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mingyiz/node-plugin.git"
+  },
+  "keywords": [
+    "plugin"
+  ],
+  "author": "Mingyi Zhang",
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/mingyiz/node-plugin/issues"
+  },
+  "homepage": "https://github.com/mingyiz/node-plugin#README.md"
+}

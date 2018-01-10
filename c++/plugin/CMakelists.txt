@@ -1,0 +1,10 @@
+#
+#
+# example for plug 
+#
+#
+cmake_minimum_required(VERSION 2.8)
+project(plugin)
+add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+add_library( example SHARED example/plugin.cpp)
+set_target_properties(example PROPERTIES VERSION 1.1 SOVERSION 1)
