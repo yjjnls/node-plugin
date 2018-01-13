@@ -19,5 +19,7 @@
     "url": "https://github.com/mingyiz/node-plugin/issues"
   },
   "homepage": "https://github.com/mingyiz/node-plugin#README.md",
-  "dependencies": {}
+  "dependencies": {
+    "bluebird": "^3.5.1"
+  }
 }

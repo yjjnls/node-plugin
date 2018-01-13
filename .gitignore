@@ -8,3 +8,4 @@ CMakeFiles*
 x64
 Release*
 *build*
+*node_modules
