@@ -7,7 +7,7 @@
 #include <list>
 #include <string>
 #include "function-def.h"
-class Plugin;
+class Addon;
 
 struct async_callback_param_t {
 
@@ -26,15 +26,15 @@ struct async_callback_param_t {
 };
 
 struct async_callback_t : public async_callback_param_t {
-	async_callback_t(Plugin* p)
-		: plugin(p), ref(nullptr)
+	async_callback_t(Addon* p)
+		: addon(p), ref(nullptr)
 	{}
-	Plugin* plugin;
+	Addon*     addon;
 	napi_ref   ref;
 
 };
 
-class Plugin {
+class Addon {
  public:
   static napi_value Init(napi_env env, napi_value exports);
   static void Destructor(napi_env env, void* nativeObject, void* finalize_hint);
@@ -47,17 +47,9 @@ class Plugin {
 	  uv_async_send(&async_);
   }
 
-//  inline void PushNotification(async_callback_t* ac)
-//  {
-//	  uv_mutex_lock(&mutext_);
-//	  notifications_.push_back(ac);
-//	  uv_mutex_unlock(&mutext_);
-//	  uv_async_send(&async_);
-//  }
-
  private:
-  explicit Plugin(const std::string& basename);
-  ~Plugin();
+  explicit Addon(const std::string& basename);
+  ~Addon();
 
   static napi_value New(napi_env env, napi_callback_info info);
   static napi_value Release(napi_env env, napi_callback_info info);
@@ -80,19 +72,27 @@ class Plugin {
   NODE_PLUGIN_CALL         plugin_call;
   NODE_PLUGIN_INIT         plugin_init;
   NODE_PLUGIN_TERMINATE    plugin_terminate;
-
-  static void plugin_callback(const void* context,
-	  const void* data, size_t size, int   status,
-	  NODE_PLUGIN_FINALIZE finalize, void* hint);
-
-  static void plugin_notify(const void* context,
-	  const void* data, size_t size, int   status,
-	  NODE_PLUGIN_FINALIZE finalize, void* hint);
-
-
+  node_plugin_interface_initialize_fn node_plugin_interface_initialize;
+//  static void plugin_callback(const void* context,
+//	  const void* data, size_t size, int   status,
+//	  NODE_PLUGIN_FINALIZE finalize, void* hint);
+//
+//  static void plugin_notify(const void* context,
+//	  const void* data, size_t size, int   status,
+//	  NODE_PLUGIN_FINALIZE finalize, void* hint);
 
 
 
+  static void plugin_call_return(const void* self, const void* context,
+	  const void* data, size_t size,
+	  int status,
+	  node_plugin_finalize_fn finalizer,
+	  void* hint);
+
+  static void plugin_notify(const void* self,
+	  const void* data, size_t size,
+	  node_plugin_finalize_fn finalizer,
+	  void* hint);
 
 
 
