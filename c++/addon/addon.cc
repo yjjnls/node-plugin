@@ -228,7 +228,7 @@ napi_value Addon::Initialize(napi_env env, napi_callback_info info) {
 	assert(type == napi_string);
 
 	std::string options(4096, 0);
-	status = napi_get_value_string_utf8(env, args[0], (char*)options.data(), options.size(), &n);
+	status = napi_get_value_string_utf8(env, args[1], (char*)options.data(), options.size(), &n);
 	assert(status == napi_ok);
 
 	
@@ -416,7 +416,8 @@ bool Addon::Open(const std::string& dir)
 
 	if (!handle_)
 	{
-		error_ = _dlerror();
+		//error_ = _dlerror();
+		error_ = error_ + "("+basename_ + "@" + dir+")";
 		return false;
 	}
 	node_plugin_interface_initialize =
@@ -466,7 +467,6 @@ bool Addon::Initialize(const std::string& dir, const std::string& options, napi_
 	plugin_ = node_plugin_interface_initialize(this, 
 		Addon::plugin_call_return, Addon::plugin_notify);
 	plugin_->addon_ = this;
-	
 	plugin_->init(plugin_, options.data(), options.size());
 	state_ = Addon::INIT;
 	return true;
