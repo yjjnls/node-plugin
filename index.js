@@ -15,7 +15,7 @@ class Plugin {
     constructor( name ) {
 		this.name = name;
 		this.plugin_ = new node_plugin.Plugin(name +_EXT)
-		console.log(this.plugin_);
+		
     }
 
     initialize(options,notify) {
@@ -33,19 +33,14 @@ class Plugin {
 	
 		}
 
-		console.log(this.plugin_);
-
 		this.plugin_.initialize(dir,opt,notify);
 	}
 
-	terminate(){
-		this.plugin_.release(() => {
-			console.log("done!!");
-		})
+	terminate(done){
+		this.plugin_.release(done);
 	}
 
 	call(buf,cb){
-		console.log(buf)
 		this.plugin_.call(buf,cb);
 	}
 
@@ -53,7 +48,7 @@ class Plugin {
 
 
 
-example = path.join(__dirname,'/bin/example'+_EXT)
+//example = path.join(__dirname,'/bin/calc'+_EXT)
 module.exports = {
 	Plugin  : Plugin
 }
@@ -62,7 +57,7 @@ function notify(buf){
 	console.log(buf.toString());
 }
 
-plugin = new Plugin('example')
+plugin = new Plugin('calc')
 plugin.initialize(options={
     plugin:{
         directory: __dirname +'/bin'
@@ -70,14 +65,15 @@ plugin.initialize(options={
     user: 'xxxxxx'
 },notify);
 
-plugin.call(Buffer.from( "100+23", 'utf8' ),
+var expr = Buffer.from( "100+23", 'utf8' );
+plugin.call(expr,
 (buf,status) =>{
-	console.log('===============================');
-	console.log(buf.toString());
-	console.log('===============================');
+	console.log(expr.toString() ,'=',buf.toString());
 
 });
 
 setTimeout(()=>{
-	//plugin.terminate();
-},10000);
+	plugin.terminate(()=>{
+		console.log(">>>> Termated <<<<");
+	});
+},1000);

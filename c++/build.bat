@@ -21,5 +21,5 @@ mkdir %PLUGIN_BUILD%
 pushd %PLUGIN_BUILD%
 cmake -G "Visual Studio 14 2015 Win64" ..
 cmake --build . --target ALL_BUILD --config Release
-copy  Release\example.dll %ROOTD%\bin\example.dll
+copy  Release\calc.dll %ROOTD%\bin\calc.dll
 popd

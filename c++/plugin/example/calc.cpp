@@ -42,14 +42,13 @@ static void call(const void* self, const void* context,
 	if (iface->notify)
 	{
 		char log[256];
-		sprintf(log, "* %d request has been procced.", counter_);
+		sprintf(log, "* %d request has been procced.", counter);
 		iface->notify(self, log, strlen(log) + 1, NULL, NULL);
 	}
 }
 
 static void terminate(const void* self, void(*done)(const void* self))
 {
-	printf("plugin_terminate %x %x\n", self, done);
 	if (done) {
 		done(self);
 	}
