@@ -72,14 +72,14 @@ struct _node_plugin_interface_t {
 	void (* init     )(const void* self, const void* data, size_t size);
 	void (* call     )(const void* self, const void* context, 
 		               const void* data, size_t size);
-	void (* terminate)(const void* self, void(*done)());
+	void (* terminate)(const void* self, void(*done)(const void* self));
 
 	//set by addon
 	node_plugin_call_return_fn call_return;
 	node_plugin_notify_fn      notify;
 
 	//
-	void* addon_; //node addon env
+	void* addon_; //node addon 
 };
 
 typedef struct _node_plugin_interface_t node_plugin_interface_t;
@@ -89,11 +89,22 @@ typedef node_plugin_interface_t* (*node_plugin_interface_initialize_fn)(
 								   node_plugin_call_return_fn call_return,
 								   node_plugin_notify_fn      notify );
 
+typedef void (*node_plugin_interface_terminate_fn)(node_plugin_interface_t* iface);
 
 #ifdef __cplusplus
 }
 #endif
 
+#ifdef _WIN32
+	#define _NODE_PLUGIN_DLLEXPORT __declspec(dllexport)
+#else
+	#define _NODE_PLUGIN_DLLEXPORT  
+#endif
 
+#ifdef __cplusplus
+	#define NODE_PLUGIN_SYMBOL extern "C" _NODE_PLUGIN_DLLEXPORT
+#else
+	#define NODE_PLUGIN_SYMBOL _NODE_PLUGIN_DLLEXPORT
+#endif
 
 #endif

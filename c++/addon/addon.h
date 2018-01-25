@@ -35,6 +35,12 @@ struct async_callback_t : public async_callback_param_t {
 };
 
 class Addon {
+	enum state_t {
+		IDLE =0,
+		INIT   ,//initializing
+		RUN    ,//running
+		TERM    //terminating
+	};
  public:
   static napi_value Init(napi_env env, napi_value exports);
   static void Destructor(napi_env env, void* nativeObject, void* finalize_hint);
@@ -45,6 +51,15 @@ class Addon {
 	  callbacks_.push_back(ac);
 	  uv_mutex_unlock(&mutext_);
 	  uv_async_send(&async_);
+  }
+
+  inline void emit_plugin_terminated()
+  {
+	  uv_mutex_lock(&mutext_);
+	  plugin_terminated_ = true;
+	  uv_mutex_unlock(&mutext_);
+	  uv_async_send(&async_);
+
   }
 
  private:
@@ -65,24 +80,18 @@ class Addon {
   bool Open(const std::string& dir);
   const std::string error() const { return error_; }
   napi_status to_buffer(async_callback_param_t* cb, napi_value* pvalue);
-  void Release();
+  void Release(napi_value callback);
+  void Terminate();
 
-  void RegistNotification(napi_value callback);
-  ////
-  NODE_PLUGIN_CALL         plugin_call;
-  NODE_PLUGIN_INIT         plugin_init;
-  NODE_PLUGIN_TERMINATE    plugin_terminate;
+//  void RegistNotification(napi_value callback);
+//  ////
+//  NODE_PLUGIN_CALL         plugin_call;
+//  NODE_PLUGIN_INIT         plugin_init;
+//  NODE_PLUGIN_TERMINATE    plugin_terminate;
   node_plugin_interface_initialize_fn node_plugin_interface_initialize;
-//  static void plugin_callback(const void* context,
-//	  const void* data, size_t size, int   status,
-//	  NODE_PLUGIN_FINALIZE finalize, void* hint);
-//
-//  static void plugin_notify(const void* context,
-//	  const void* data, size_t size, int   status,
-//	  NODE_PLUGIN_FINALIZE finalize, void* hint);
+  node_plugin_interface_terminate_fn  node_plugin_interface_terminate;
 
-
-
+  static void terminate_done(const void* self);
   static void plugin_call_return(const void* self, const void* context,
 	  const void* data, size_t size,
 	  int status,
@@ -116,8 +125,12 @@ class Addon {
 
   napi_value notifier_;
   napi_ref   notifier_ref_;
+  napi_value terminater_;
+  napi_ref   terminater_ref_;
 
   node_plugin_interface_t* plugin_;
+  state_t state_;
+  bool    plugin_terminated_;
 };
 
 #endif  // TEST_ADDONS_NAPI_6_OBJECT_WRAP_NodePlugin_H_
