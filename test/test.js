@@ -6,7 +6,7 @@ catch(e){
 }
 
 console.log(node_plugin.EXAMPLE)
-var obj = new node_plugin.Plugin(node_plugin.EXAMPLE)
+var obj = new node_plugin.Plugin('example')
 
 const param  = Buffer.from("123");//data.buffer);
 

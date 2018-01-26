@@ -22,7 +22,7 @@ std::string _GetLastError()
 		FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL,
 		dw,
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
 		(LPTSTR)&lpMsgBuf,
 		0, NULL);
 	std::string err((char*)lpMsgBuf);
@@ -33,6 +33,25 @@ std::string _GetLastError()
 }
 #endif
 
+int  _chdir(const char *dir)
+{
+#ifdef _WIN32
+	::SetCurrentDirectoryA(dir);
+#else
+	::chdir(dir);
+#endif
+	return 0;
+}
+
+int _getcwd(char* buf, size_t size)
+{
+#ifdef _WIN32
+	::GetCurrentDirectoryA(size, buf);
+#else
+	getcwd(buf, size);
+#endif	
+	return 0;
+}
 
 void* _dlopen(const char *filename)
 {
