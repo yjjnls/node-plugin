@@ -1,28 +1,55 @@
-try {
-	var node_plugin = require('node_plugin')
+var Plugin = require('../promise_plugin').Plugin;
+
+function notify(buf) {
+	console.log(buf.toString());
 }
-catch(e){
-	var node_plugin = require('../index')
+
+let plugin = new Plugin('calc');
+let options = {
+	plugin: {
+		directory: __dirname + '/../bin'
+	},
+	user: 'xxxxxx'
+}
+plugin.initialize(options, notify);
+
+const expr = Buffer.from("100+23", 'utf8');
+async function call1(buf) {
+	await plugin.call(buf)
+		.then(res => {
+			console.log(buf.toString(), '=', res.toString());
+		})
+		.catch(err => {
+			console.log(buf.toString());
+		})
 }
 
-console.log(node_plugin.EXAMPLE)
-var obj = new node_plugin.Plugin('example')
-
-const param  = Buffer.from("123");//data.buffer);
-
-console.log("*************************");
-
-for( var i = 0;i<100;i++){
-	obj.call( param, function( buf){
-		console.log( buf.toString());
-
-	});
+async function call2(buf) {
+	await plugin.call(buf)
+		.then(res => {
+			console.log(buf.toString(), '=', res.toString());
+			return plugin.call(buf);
+		})
+		.then(res => {
+			console.log(buf.toString(), '=', res.toString());
+		})
+		.catch(err => {
+			console.log(res.toString());
+		})
 }
-console.log("*************************");
 
-////obj = null
-setTimeout( function(){
-	obj.release();
-	obj = null;
-	console.log("--- END ---");
-},500);
+async function test(buf) {
+	try {
+		await call1(buf);
+		await call2(buf);
+		console.log('******end******');
+		plugin.terminate(() => {
+			console.log(">>>> Terminated <<<<");
+		});
+	} catch (e) {
+		console.log('---------------------------------');
+		console.error(e.message);
+	}
+}
+
+test(expr);
