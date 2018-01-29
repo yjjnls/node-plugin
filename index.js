@@ -74,8 +74,8 @@ module.exports = {
 // 	});
 // });
 
-// setTimeout(()=>{
-// 	plugin.terminate(()=>{
-// 		console.log(">>>> Termated <<<<");
-// 	});
-// },1000);
+// // setTimeout(()=>{
+// // 	plugin.terminate(()=>{
+// // 		console.log(">>>> Termated <<<<");
+// // 	});
+// // },1000);

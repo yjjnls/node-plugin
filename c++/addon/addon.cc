@@ -311,16 +311,18 @@ napi_value Addon::Call(napi_env env, napi_callback_info info)
 napi_status Addon::to_buffer(async_callback_param_t* ac,napi_value* pvalue)
 {
 	napi_status status;
-	if (ac->finalize) {
-		status = napi_create_external_buffer(env_,
-			ac->size, (void*)ac->data,
-			(napi_finalize)ac->finalize, ac->hint, pvalue);
-	}
-	else {
-		status = napi_create_buffer_copy(
+	status = napi_create_buffer_copy(
 			env_, ac->size, (const void*)ac->data, NULL, pvalue);
+	// if (ac->finalize) {
+	// 	status = napi_create_external_buffer(env_,
+	// 		ac->size, (void*)ac->data,
+	// 		(napi_finalize)ac->finalize, ac->hint, pvalue);
+	// }
+	// else {
+	// 	status = napi_create_buffer_copy(
+	// 		env_, ac->size, (const void*)ac->data, NULL, pvalue);
 
-	}
+	// }
 	return status;
 
 }
@@ -364,12 +366,13 @@ void Addon::OnEvent()
 		status = napi_get_reference_value(env_, ac->ref, &cb);
 		assert(status == napi_ok);
 		napi_value result;
-		napi_value argv[1];
+		napi_value argv[2];
 		status = to_buffer(ac,&argv[0]);
 		assert(status == napi_ok);
+		status = napi_create_int32(env_, ac->status, &argv[1]);
+		assert(status == napi_ok);
 
-
-		status = napi_call_function(env_, global, cb, 1, argv, &result);
+		status = napi_call_function(env_, global, cb, 2, argv, &result);
 		assert(status == napi_ok);
 
 		if (ac->finalize)

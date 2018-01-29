@@ -34,7 +34,8 @@ async function call2(buf) {
 			console.log(buf.toString(), '=', res.toString());
 		})
 		.catch(err => {
-			console.log(res.toString());
+			console.log(err.toString());
+			throw new Error(err.toString());
 		})
 }
 
@@ -49,6 +50,9 @@ async function test(buf) {
 	} catch (e) {
 		console.log('---------------------------------');
 		console.error(e.message);
+		plugin.terminate(() => {
+			console.log(">>>> Terminated <<<<");
+		});
 	}
 }
 

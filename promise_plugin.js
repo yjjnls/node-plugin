@@ -17,7 +17,7 @@ class Promise_plugin {
         let self = this;
         return new Promise(function (resolve, reject) {
             self.plugin_.call(buf, (res, status) => {
-                if (!status)
+                if (status==0)
                     resolve(res);
                 else
                     reject(res);
