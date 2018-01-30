@@ -52,28 +52,30 @@ class Plugin {
 module.exports = {
 	Plugin  : Plugin
 }
+/*-----------------------------------------------------------------------------------------*/
+// function notify(buf){
+// 	console.log(buf.toString());
+// }
 
-function notify(buf){
-	console.log(buf.toString());
-}
+// plugin = new Plugin('calc')
+// plugin.initialize(options={
+//     plugin:{
+//         directory: __dirname +'/bin'
+//     },
+//     user: 'xxxxxx'
+// },notify);
 
-plugin = new Plugin('calc')
-plugin.initialize(options={
-    plugin:{
-        directory: __dirname +'/bin'
-    },
-    user: 'xxxxxx'
-},notify);
+// var expr = Buffer.from( "100+23", 'utf8' );
+// plugin.call(expr, (buf,status) =>{
+// 	console.log(expr.toString() ,'=',buf.toString());
+// 	console.log(status)
+// 	plugin.terminate(()=>{
+// 		console.log(">>>> Termated <<<<");
+// 	});
+// });
 
-var expr = Buffer.from( "100+23", 'utf8' );
-plugin.call(expr,
-(buf,status) =>{
-	console.log(expr.toString() ,'=',buf.toString());
-
-});
-
-setTimeout(()=>{
-	plugin.terminate(()=>{
-		console.log(">>>> Termated <<<<");
-	});
-},1000);
+// // setTimeout(()=>{
+// // 	plugin.terminate(()=>{
+// // 		console.log(">>>> Termated <<<<");
+// // 	});
+// // },1000);

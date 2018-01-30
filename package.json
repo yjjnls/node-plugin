@@ -2,7 +2,7 @@
   "name": "node-plugin",
   "version": "0.1.7",
   "description": "Node call plugin (dynamic lib) utils",
-  "main": "index.js",
+  "main": "promise_plugin.js",
   "scripts": {
     "test": "node test/test.js"
   },
@@ -19,5 +19,7 @@
     "url": "https://github.com/mingyiz/node-plugin/issues"
   },
   "homepage": "https://github.com/mingyiz/node-plugin#README.md",
-  "dependencies": {}
+  "dependencies": {
+    "bluebird": "^3.5.1"
+  }
 }
