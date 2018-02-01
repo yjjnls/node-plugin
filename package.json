@@ -4,7 +4,8 @@
   "description": "Node call plugin (dynamic lib) utils",
   "main": "promise_plugin.js",
   "scripts": {
-    "test": "node test/test.js"
+    "test": "node test/test.js",
+    "template": "node util/template.js"
   },
   "repository": {
     "type": "git",

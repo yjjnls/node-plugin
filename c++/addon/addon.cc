@@ -502,7 +502,7 @@ bool Addon::Open(const std::string& dir)
 	}
 	return true;
 }
-void Addon::init_done(const void* self, int status, char *msg, char *version)
+void Addon::init_done(const void* self, int status, char *msg)
 {
 	node_plugin_interface_t* iface = (node_plugin_interface_t*)self;
 	Addon* This = (Addon*)iface->addon_;
@@ -511,7 +511,7 @@ void Addon::init_done(const void* self, int status, char *msg, char *version)
 	This->plugin_inited_ = true;
 	This->status_ = status;
 	This->msg_ = std::string(msg);
-	This->version_ = std::string(version);
+	This->version_ = std::string(iface->version);
 	uv_mutex_unlock(&This->mutext_);
 	uv_async_send(&This->async_);
 }
