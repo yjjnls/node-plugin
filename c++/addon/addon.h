@@ -6,7 +6,7 @@
 #include <map>
 #include <list>
 #include <string>
-#include "function-def.h"
+#include "node_plugin_interface.h"
 class Addon;
 
 struct async_callback_param_t {
@@ -80,7 +80,7 @@ private:
 	node_plugin_interface_initialize_fn node_plugin_interface_initialize;
 	node_plugin_interface_terminate_fn  node_plugin_interface_terminate;
 
-	static void init_done(const void* self, int status, char *msg, char *version);
+	static void init_done(const void* self, int status, char *msg);
 	static void terminate_done(const void* self, int status, char *msg);
 	static void plugin_call_return(const void* self, const void* context,
 		const void* data, size_t size,

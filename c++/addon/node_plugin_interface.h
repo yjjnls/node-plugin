@@ -70,7 +70,7 @@ struct _node_plugin_interface_t {
 
 	//set by plugin
 	void (* init     )(const void* self, const void* data, size_t size, 
-					   void(*cb)(const void* self, int status, char *msg, char *version));
+					   void(*cb)(const void* self, int status, char *msg));
 	void (* call     )(const void* self, const void* context, 
 		               const void* data, size_t size);
 	void (* terminate)(const void* self, void(*cb)(const void* self, int status, char *msg));
@@ -78,7 +78,7 @@ struct _node_plugin_interface_t {
 	//set by addon
 	node_plugin_call_return_fn call_return;
 	node_plugin_notify_fn      notify;
-	const char* version;
+	char* version;
 
 	//
 	void* addon_; //node addon 
@@ -110,12 +110,18 @@ typedef void (*node_plugin_interface_terminate_fn)(node_plugin_interface_t* ifac
 #endif
 /**
 	example
-	static void init(const void* self, const void* data, size_t size)
+	static void init(const void *self, const void *data, size_t size, void (*cb)(const void *self, int status, char *msg))
 	{
 		//TODO:
 		//data is JSON string (utf8)
 		//do as your needs
-		....
+
+		if (cb)
+		{
+			cb(self, 0, ">>>>>Initialize done!<<<<<");
+			//error callback
+			// cb(self, 1 ,"Initalize error!");
+		}
 	}
 
 	static void call(const void* self, const void* context,
@@ -124,14 +130,16 @@ typedef void (*node_plugin_interface_terminate_fn)(node_plugin_interface_t* ifac
 	   ......
 	}
 
-	static void terminate(const void* self, void(*done)(const void* self))
+	static void terminate(const void *self, void (*cb)(const void *self, int status, char *msg))
 	{
-		....
-		if (done) {
-		done(self);
+		if (cb)
+		{
+			cb(self, 0, ">>>>>Terminate done!<<<<<");
+			//error callback
+			// cb(self, 1 ,"Terminate error!");
 		}
 	}
-	NODE_PLUGIN_IMPL( init , call , terminate)
+	NODE_PLUGIN_IMPL( 0.1.0, init , call , terminate)
 
 */
 #define NODE_PLUGIN_IMPL( _VERSION, _init_ , _call_ , _terminate_)            \
@@ -152,9 +160,9 @@ node_plugin_interface_t* node_plugin_interface_initialize(          \
 	iface->init = _init_;                                           \
 	iface->call = _call_;                                           \
 	iface->terminate = _terminate_;	                                \
-	iface->version = #_VERSION                                      \
-	return iface;					                                \	
-}															   		\
+	iface->version = #_VERSION;                                     \
+	return iface;													\
+}																	\
 																	\
 NODE_PLUGIN_SYMBOL													\
 void node_plugin_interface_terminate(node_plugin_interface_t* iface)\
