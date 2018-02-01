@@ -66,7 +66,7 @@ private:
 
 	/////
 	void Call(napi_env env, napi_value param, napi_value callback);
-	bool Initialize(const std::string& dir, const std::string& options, napi_value notify);
+	bool Initialize(const std::string& dir, const std::string& options, napi_value notify, napi_value init_cb);
 
 	void OnEvent();
 	bool Open(const std::string& dir);
@@ -74,12 +74,14 @@ private:
 	napi_status to_buffer(async_callback_param_t* cb, napi_value* pvalue);
 	void Release(napi_value callback);
 	void Terminate();
+	void Initial();
 
 
 	node_plugin_interface_initialize_fn node_plugin_interface_initialize;
 	node_plugin_interface_terminate_fn  node_plugin_interface_terminate;
 
-	static void terminate_done(const void* self);
+	static void init_done(const void* self, int status, char *msg, char *version);
+	static void terminate_done(const void* self, int status, char *msg);
 	static void plugin_call_return(const void* self, const void* context,
 		const void* data, size_t size,
 		int status,
@@ -108,11 +110,17 @@ private:
 	void*       handle_;//dynamic lib handle
 
 	napi_ref   notifier_ref_;
+	napi_ref   initial_ref_;
 	napi_ref   terminater_ref_;
 
 	node_plugin_interface_t* plugin_;
 	state_t state_;
 	bool    plugin_terminated_;
+	bool    plugin_inited_;
+	int status_;
+	std::string msg_;
+	std::string version_;
+
 };
 
 #endif

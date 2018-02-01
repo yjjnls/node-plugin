@@ -14,6 +14,9 @@ Addon::Addon(const std::string& basename)
 	, state_(Addon::IDLE)
 	, plugin_terminated_(false)
 	, terminater_ref_(nullptr)
+	, status_(0)
+	, plugin_inited_(false)
+	, initial_ref_(nullptr)
 {
 	uv_async_init(uv_default_loop(), &async_, Addon::OnEvent);
 	async_.data = this;
@@ -207,8 +210,8 @@ napi_value Addon::New(napi_env env, napi_callback_info info) {
 napi_value Addon::Initialize(napi_env env, napi_callback_info info) {
 	napi_status status;
 	
-	size_t argc = 3;
-	napi_value args[3];
+	size_t argc = 4;
+	napi_value args[4];
 	napi_value jsthis;
 	status = napi_get_cb_info(env, info, &argc, args, &jsthis, nullptr);
 	assert(status == napi_ok);
@@ -238,7 +241,7 @@ napi_value Addon::Initialize(napi_env env, napi_callback_info info) {
 	Addon* obj;
 	status = napi_unwrap(env, jsthis, reinterpret_cast<void**>(&obj));
 	
-	obj->Initialize(dir, options, args[2]);
+	obj->Initialize(dir, options, args[2], args[3]);
 
 	return nullptr;
 }
@@ -327,23 +330,77 @@ napi_status Addon::to_buffer(async_callback_param_t* ac,napi_value* pvalue)
 
 }
 
+void Addon::Initial()
+{
+	state_ = Addon::RUN;
+	if (initial_ref_)
+	{
+		napi_status status;
+		napi_handle_scope scope;
+
+		status = napi_open_handle_scope(env_, &scope);
+
+		napi_value global;
+		status = napi_get_global(env_, &global);
+		assert(status == napi_ok);
+
+		napi_value result;
+		napi_value argv[3];
+		napi_value done = nullptr;
+
+		status = napi_get_reference_value(env_, initial_ref_, &done);
+		napi_create_int32(env_, status_, &argv[0]);
+		napi_create_string_utf8(env_, msg_.c_str(), msg_.size(), &argv[1]);
+		napi_create_string_utf8(env_, version_.c_str(), version_.size(), &argv[2]);
+		status = napi_call_function(env_, global, done, 3, argv, &result);
+		assert(status == napi_ok);
+		napi_close_handle_scope(env_,scope);
+
+		uint32_t refcount;
+		napi_reference_unref(env_, initial_ref_, &refcount);
+		napi_delete_reference(env_, initial_ref_);
+		initial_ref_ = nullptr;
+		plugin_inited_ = false;
+	}
+	// if (plugin_)
+	// {
+	// 	node_plugin_interface_terminate(plugin_);
+	// 	plugin_ = nullptr;
+	// }
+
+
+	// if (handle_) {
+	// 	_dlclose(handle_);
+	// 	handle_ = NULL;
+	// }
+	// uv_mutex_destroy(&mutext_);
+	// uv_close((uv_handle_t*)&async_, NULL);
+
+}
+
 void Addon::OnEvent() 
 {
 	napi_status status;
 
 	std::list<async_callback_t*> cbs;
 	std::list<async_callback_param_t> ntfs;
-	bool terminated = false;
+	state_t state = IDLE;
 	uv_mutex_lock(&mutext_);
-	terminated = plugin_terminated_;
+	state = state_;
 
-	if (!terminated)
+	if (state == RUN)
 	{
 		cbs.swap(callbacks_);
 		ntfs.swap(notifications_);
 	}
 	uv_mutex_unlock(&mutext_);
-	if (terminated) 
+	if (state == INIT) 
+	{
+		this->Initial();
+		return;
+	}
+	
+	if (state == TERM) 
 	{
 		this->Terminate();
 		return;
@@ -445,8 +502,21 @@ bool Addon::Open(const std::string& dir)
 	}
 	return true;
 }
+void Addon::init_done(const void* self, int status, char *msg, char *version)
+{
+	node_plugin_interface_t* iface = (node_plugin_interface_t*)self;
+	Addon* This = (Addon*)iface->addon_;
 
-bool Addon::Initialize(const std::string& dir, const std::string& options, napi_value notify)
+	uv_mutex_lock(&This->mutext_);
+	This->plugin_inited_ = true;
+	This->status_ = status;
+	This->msg_ = std::string(msg);
+	This->version_ = std::string(version);
+	uv_mutex_unlock(&This->mutext_);
+	uv_async_send(&This->async_);
+}
+
+bool Addon::Initialize(const std::string& dir, const std::string& options, napi_value notify, napi_value init_cb)
 {
 	state_ = Addon::INIT;
 	if (!Open(dir))
@@ -467,28 +537,37 @@ bool Addon::Initialize(const std::string& dir, const std::string& options, napi_
 		status = napi_create_reference(env_, notify, 1, &notifier_ref_);
 	}
 
+	status = napi_typeof(env_, init_cb, &type);
+	assert(status == napi_ok);
+	if (type == napi_function)
+	{
+		status = napi_create_reference(env_, init_cb, 1, &initial_ref_);
+	}
+	
 	plugin_ = node_plugin_interface_initialize(this, 
 		Addon::plugin_call_return, Addon::plugin_notify);
 	plugin_->addon_ = this;
-	plugin_->init(plugin_, options.data(), options.size());
+	plugin_->init(plugin_, options.data(), options.size(), Addon::init_done);
 	state_ = Addon::INIT;
 	return true;
 
 }
-void Addon::terminate_done(const void* self)
+void Addon::terminate_done(const void* self, int status, char *msg)
 {
 	node_plugin_interface_t* iface = (node_plugin_interface_t*)self;
 	Addon* This = (Addon*)iface->addon_;
 
 	uv_mutex_lock(&This->mutext_);
 	This->plugin_terminated_ = true;
+	This->status_ = status;
+	This->msg_ = std::string(msg);
 	uv_mutex_unlock(&This->mutext_);
 	uv_async_send(&This->async_);
 }
 
 void Addon::Terminate()
 {
-	
+
 	if (terminater_ref_)
 	{
 		napi_status status;
@@ -501,12 +580,14 @@ void Addon::Terminate()
 		assert(status == napi_ok);
 
 		napi_value result;
-		napi_value argv[1];
+		napi_value argv[2];
 		napi_value  done=nullptr;
 
 		status = napi_get_reference_value(env_, terminater_ref_, &done);
+		napi_create_int32(env_, status_, &argv[0]);
+		napi_create_string_utf8(env_, msg_.c_str(), msg_.size(), &argv[1]);
 
-		status = napi_call_function(env_, global, done, 0, argv, &result);
+		status = napi_call_function(env_, global, done, 2, argv, &result);
 		assert(status == napi_ok);
 		napi_close_handle_scope(env_,scope);
 
@@ -529,10 +610,12 @@ void Addon::Terminate()
 	}
 	uv_mutex_destroy(&mutext_);
 	uv_close((uv_handle_t*)&async_, NULL);
+	state_ = Addon::IDLE;
 
 }
 void Addon::Release(napi_value callback)
 {
+	state_ = Addon::TERM;
 	napi_valuetype type;
 	napi_status status;
 	status = napi_typeof(env_, callback, &type);
