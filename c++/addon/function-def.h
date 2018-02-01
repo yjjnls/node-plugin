@@ -69,10 +69,11 @@ typedef void(*node_plugin_notify_fn)(const void* self, const void* data, size_t 
 struct _node_plugin_interface_t {
 
 	//set by plugin
-	void (* init     )(const void* self, const void* data, size_t size);
+	void (* init     )(const void* self, const void* data, size_t size, 
+					   void(*cb)(const void* self, int status, char *msg, char *version));
 	void (* call     )(const void* self, const void* context, 
 		               const void* data, size_t size);
-	void (* terminate)(const void* self, void(*done)(const void* self));
+	void (* terminate)(const void* self, void(*cb)(const void* self, int status, char *msg));
 
 	//set by addon
 	node_plugin_call_return_fn call_return;

@@ -5,12 +5,20 @@
 #include <string>
 #include "calculator.hpp"
 
+
+#define VERSION "0.1.0"
 ///////////////////////////////////////////////////////////////
-static void init(const void* self, const void* data, size_t size)
+static void init(const void* self, const void* data, size_t size, void(*cb)(const void* self, int status, char *msg, char *version))
 {
 	//TODO:
 	//data is JSON string (utf8)
 	//do as your needs
+
+	if (cb) {
+		cb(self, 0, ">>>>>Initialize done!<<<<<", VERSION);
+		//error callback
+		// cb(self, 1 ,"Initalize error!");
+	}
 }
 
 static void call(const void* self, const void* context,
@@ -47,11 +55,14 @@ static void call(const void* self, const void* context,
 	}
 }
 
-static void terminate(const void* self, void(*done)(const void* self))
+static void terminate(const void* self, void(*cb)(const void* self, int status, char *msg))
 {
-	if (done) {
-		done(self);
+	if (cb) {
+		cb(self, 0, ">>>>>Terminate done!<<<<<");
+		//error callback
+		// cb(self, 1 ,"Terminate error!");
 	}
+
 }
 
 //@intialize

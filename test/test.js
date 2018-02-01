@@ -1,4 +1,4 @@
-var Plugin = require('../promise_plugin').Plugin;
+var Plugin = require('../index').Plugin;
 
 function notify(buf) {
 	console.log(buf.toString());
@@ -11,7 +11,17 @@ let options = {
 	},
 	user: 'xxxxxx'
 }
-plugin.initialize(options, notify);
+async function Initialize(arg) {
+	await plugin.initialize(arg)
+		.then(res => {
+			console.log(res);
+		})
+		.catch(err => {
+			console.log(err);
+			throw new Error(err.toString());
+		})
+}
+
 
 const expr = Buffer.from("100+23", 'utf8');
 async function call1(buf) {
@@ -39,21 +49,32 @@ async function call2(buf) {
 		})
 }
 
+async function Terminate() {
+	await plugin.terminate()
+		.then(res => {
+			console.log(res);
+		})
+		.catch(err => {
+			console.log(err.toString());
+			throw new Error(err.toString());
+		})
+}
+
 async function test(buf) {
 	try {
+		await Initialize(options);
+		console.log('plugin version: ' + plugin.version());
 		await call1(buf);
 		await call2(buf);
-		console.log('******end******');
-		plugin.terminate(() => {
-			console.log(">>>> Terminated <<<<");
-		});
+		await Terminate();
 	} catch (e) {
-		console.log('---------------------------------');
+		console.log('-----------------error----------------');
 		console.error(e.message);
-		plugin.terminate(() => {
-			console.log(">>>> Terminated <<<<");
-		});
+		await Terminate();
 	}
 }
 
+plugin.on('notify', (buf) => {
+	console.log('notify: ' + buf.toString());
+})
 test(expr);
