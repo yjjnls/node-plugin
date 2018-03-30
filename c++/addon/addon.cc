@@ -323,8 +323,13 @@ napi_value Addon::Call(napi_env env, napi_callback_info info)
 
 	if (meta)
 	{
-		status = napi_get_buffer_info(env, *meta_value, &meta, &mlen);
+		status = napi_typeof(env, *meta, &valuetype);
 		assert(status == napi_ok);
+		if( value_type != napi_undefined)
+		{
+			status = napi_get_buffer_info(env, *meta_value, &meta, &mlen);
+			assert(status == napi_ok);
+		}
 	}
 
 	node_plugin_interface_t* plugin = obj->plugin_;

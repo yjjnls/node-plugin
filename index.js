@@ -21,7 +21,7 @@ class Base_Plugin extends EventEmitter {
 		this.plugin_ = new node_plugin.Plugin(name + _EXT);
 	}
 
-	initialize(options, cb) {
+	initialize(options, callback) {
 		var dir = "";
 		var opt = "";
 
@@ -36,18 +36,22 @@ class Base_Plugin extends EventEmitter {
 		}
 
 		let self = this;
-		let notify = (res) => {
-			self.emit('notify', res);
+		let notify = (data,meta) => {
+			self.emit('notify', data,meta);
 		}
-		this.plugin_.initialize(dir, opt, notify, cb);
+		this.plugin_.initialize(dir, opt, notify, callback);
 	}
 
-	terminate(cb) {
-		this.plugin_.release(cb);
+	terminate(callback) {
+		this.plugin_.release(callback);
 	}
 
-	call(buf, cb) {
-		this.plugin_.call(buf, cb);
+	call(data,meta, callback) {
+		if( callback == undefined ){
+			callback = meta;
+			meta = undefined
+		}
+		this.plugin_.call(data,meta, cb);
 	}
 
 }
@@ -60,8 +64,8 @@ class Plugin extends EventEmitter {
 		this.version_ = undefined;
 		
 		let self = this;
-		this.plugin_.on('notify', buf => {
-			self.emit('notify', buf);
+		this.plugin_.on('notify', (data,meta) => {
+			self.emit('notify', data,meta);
 		})
 	}
 	version() {
@@ -90,10 +94,10 @@ class Plugin extends EventEmitter {
 			})
 		})
 	}
-	call(buf) {
+	call(data,meta) {
 		let self = this;
 		return new Promise(function (resolve, reject) {
-			self.plugin_.call(buf, (res, status) => {
+			self.plugin_.call(buf, meta,(res, status) => {
 				if (status == 0)
 					resolve(res);
 				else
