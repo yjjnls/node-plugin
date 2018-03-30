@@ -289,11 +289,13 @@ napi_value Addon::Call(napi_env env, napi_callback_info info)
 	//data is mandatory
 	status = napi_typeof(env, args[0], &valuetype);
 	assert(status == napi_ok);
-	assert(valuetype != napi_undefined);
-	status = napi_get_buffer_info(env, args[0], &data, &len);
-	assert(status == napi_ok);
-	assert(data);
-	assert(len);
+	if (valuetype != napi_undefined)
+	{
+		status = napi_get_buffer_info(env, args[0], &data, &len);
+		assert(status == napi_ok);
+		assert(data);
+		assert(len);
+	}
 
 	napi_value* callback = NULL;
 	napi_value* meta_value = NULL;
@@ -304,8 +306,8 @@ napi_value Addon::Call(napi_env env, napi_callback_info info)
 	}
 	else
 	{
-		meta = &args[1];
-		callback = &args[2];
+		meta_value = &args[1];
+		callback   = &args[2];
 	}
 	
 	//callback is mandatory
@@ -321,11 +323,11 @@ napi_value Addon::Call(napi_env env, napi_callback_info info)
 	status = napi_create_reference(env, *callback, 1, &ac->ref);
 	assert(status == napi_ok);
 
-	if (meta)
+	if (meta_value)
 	{
-		status = napi_typeof(env, *meta, &valuetype);
+		status = napi_typeof(env, *meta_value, &valuetype);
 		assert(status == napi_ok);
-		if( value_type != napi_undefined)
+		if(valuetype != napi_undefined)
 		{
 			status = napi_get_buffer_info(env, *meta_value, &meta, &mlen);
 			assert(status == napi_ok);
