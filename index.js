@@ -51,7 +51,7 @@ class Base_Plugin extends EventEmitter {
 			callback = meta;
 			meta = undefined
 		}
-		this.plugin_.call(data,meta, cb);
+		this.plugin_.call(data,meta, callback);
 	}
 
 }
@@ -97,7 +97,7 @@ class Plugin extends EventEmitter {
 	call(data,meta) {
 		let self = this;
 		return new Promise(function (resolve, reject) {
-			self.plugin_.call(buf, meta,(res, status) => {
+			self.plugin_.call(data, meta,(res, status) => {
 				if (status == 0)
 					resolve(res);
 				else
