@@ -106,64 +106,6 @@ class Plugin extends EventEmitter {
 module.exports = {
 	Plugin: Plugin
 }
-/*-----------------------------------------------------------------------------------------*/
 
-// plugin = new Plugin('calc')
-// plugin.initialize(options = {
-// 	plugin: {
-// 		directory: __dirname + '/bin'
-// 	},
-// 	user: 'xxxxxx'
-// }, (status, msg) => {
-// 	console.log('init status: ' + status);
-// 	console.log(msg);
-// 	if (status == 0) {
-// 		var expr = Buffer.from("100+23", 'utf8');
-// 		plugin.call(expr, (buf, status) => {
-// 			console.log(expr.toString(), '=', buf.toString());
-// 			console.log('call return status: ' + status);
-// 			plugin.terminate((status, msg) => {
-// 				console.log('terminate status: ' + status);
-// 				console.log(msg);
-// 			});
-// 		});
-// 	}
-// 
-// });
-// plugin.on('notify', (buf) => {
-// 	console.log('notify: ' + buf.toString());
-// })
-////-------------------------------------------------------------------------------------
-// var expr = Buffer.from("100+23", 'utf8');
-// plugin = new Plugin('calc')
-// let options = {
-// 	plugin: {
-// 		directory: __dirname + '/bin'
-// 	},
-// 	user: 'xxxxxx'
-// };
-// plugin.initialize(options)
-// 	.then(res => {
-// 		console.log(res);
-// 		return plugin.call(expr);
-// 	})
-// 	.then(res => {
-// 		console.log(res.toString());
-// 		return plugin.call(expr);
-// 	})
-// 	.then(res => {
-// 		console.log(res.toString());
-// 		return plugin.terminate();
-// 	})
-// 	.then(res => {
-// 		console.log(res);
-// 	})
-// 	.catch(err => {
-// 		console.log(err);
-// 		plugin.terminate();
-// 	})
 
-// plugin.on('notify', (buf) => {
-// 	console.log('notify: ' + buf.toString());
-// })
 

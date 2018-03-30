@@ -62,9 +62,11 @@ typedef void(*node_plugin_call_return_fn)(const void* self, const void* context,
 	node_plugin_finalize_fn finalizer,
 	void* hint);
 
-typedef void(*node_plugin_notify_fn)(const void* self, const void* data, size_t size,
-	node_plugin_finalize_fn finalizer,
-	void* hint);
+typedef void(*node_plugin_notify_fn)(const void* self, 
+	const void* data, size_t size,
+	node_plugin_finalize_fn finalizer, void* hint,
+	const void* meta, size_t msize,
+	node_plugin_finalize_fn meta_finalizer, void* meta_hint	);
 
 struct _node_plugin_interface_t {
 
@@ -72,7 +74,8 @@ struct _node_plugin_interface_t {
 	void (* init     )(const void* self, const void* data, size_t size, 
 					   void(*cb)(const void* self, int status, char *msg));
 	void (* call     )(const void* self, const void* context, 
-		               const void* data, size_t size);
+		               const void* data, size_t size,
+		               const void* meta, size_t msize);
 	void (* terminate)(const void* self, void(*cb)(const void* self, int status, char *msg));
 
 	//set by addon
@@ -125,7 +128,7 @@ typedef void (*node_plugin_interface_terminate_fn)(node_plugin_interface_t* ifac
 	}
 
 	static void call(const void* self, const void* context,
-	const void* data, size_t size)
+	const void* data, size_t size, const void* meta, size_t msize)
 	{
 	   ......
 	}
@@ -139,7 +142,7 @@ typedef void (*node_plugin_interface_terminate_fn)(node_plugin_interface_t* ifac
 			// cb(self, 1 ,"Terminate error!");
 		}
 	}
-	NODE_PLUGIN_IMPL( 0.1.0, init , call , terminate)
+	NODE_PLUGIN_IMPL( "0.1.0", init , call , terminate)
 
 */
 #define NODE_PLUGIN_IMPL( _VERSION, _init_ , _call_ , _terminate_)            \
@@ -160,7 +163,7 @@ node_plugin_interface_t* node_plugin_interface_initialize(          \
 	iface->init = _init_;                                           \
 	iface->call = _call_;                                           \
 	iface->terminate = _terminate_;	                                \
-	iface->version = #_VERSION;                                     \
+	iface->version   = _VERSION;                                    \
 	return iface;													\
 }																	\
 																	\

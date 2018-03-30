@@ -14,12 +14,17 @@ struct async_callback_param_t {
 	async_callback_param_t()
 		: data(NULL), size(0)
 		, finalize(NULL), hint(NULL)
+		, meta(NULL),msize(0)
+		, mfinalize(NULL), mhint(NULL)
 	{}
 
 	async_callback_param_t(const void* d,size_t len,
-		NODE_PLUGIN_FINALIZE finalizer, void* hinter)
+		NODE_PLUGIN_FINALIZE finalizer, void* hinter,
+		const void* md, size_t mlen,
+		NODE_PLUGIN_FINALIZE mf, void* mh)
 		: data(d), size(len)
 		, finalize(finalizer), hint(hinter)
+		, meta(md), msize(mlen),mfinalize(mf),mhint(mh)
 	{}
 
 	const void* data;
@@ -27,6 +32,10 @@ struct async_callback_param_t {
 	NODE_PLUGIN_FINALIZE finalize;
 	void*        hint;
 
+	const void* meta;
+	size_t      msize;
+	NODE_PLUGIN_FINALIZE mfinalize;
+	void*       mhint;
 
 };
 
@@ -65,13 +74,19 @@ private:
 	static void       OnEvent(uv_async_t* handle);
 
 	/////
-	void Call(napi_env env, napi_value param, napi_value callback);
+	//void Call(napi_env env, napi_value param, napi_value callback);//TO DEL
+	//
+	//void Call(napi_env env, napi_value data, napi_value meta, napi_value callback);//TO DEL
+
 	bool Initialize(const std::string& dir, const std::string& options, napi_value notify, napi_value init_cb);
 
 	void OnEvent();
 	bool Open(const std::string& dir);
 	const std::string error() const { return error_; }
 	napi_status to_buffer(async_callback_param_t* cb, napi_value* pvalue);
+	
+	size_t make_args(async_callback_param_t* cb, napi_value argv[], size_t argc);
+
 	void Release(napi_value callback);
 	void Terminate();
 	void Initial();
@@ -90,8 +105,9 @@ private:
 
 	static void plugin_notify(const void* self,
 		const void* data, size_t size,
-		node_plugin_finalize_fn finalizer,
-		void* hint);
+		node_plugin_finalize_fn finalizer,void* hint,
+		const void* meta, size_t msize,
+		node_plugin_finalize_fn meta_finalizer, void* meta_hint);
 
 
 

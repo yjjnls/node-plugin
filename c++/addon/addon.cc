@@ -79,9 +79,9 @@ void Addon::plugin_call_return(const void* self, const void* context,
 
 void Addon::plugin_notify(const void* self, 
 	const void* data, size_t size,
-	node_plugin_finalize_fn finalizer,
-	void* hint)
-
+	node_plugin_finalize_fn finalizer,	void* hint,
+	const void* meta, size_t msize,
+	node_plugin_finalize_fn meta_finalizer, void* meta_hint)
 {
 	
 	const void* d   = data;
@@ -93,11 +93,20 @@ void Addon::plugin_notify(const void* self,
 		f = _buffer_copy_finalize;
 	}
 
+	const void* md = data;
+	size_t      mlen = size;
+	node_plugin_finalize_fn mf = finalizer;
+	if (mf == NULL)
+	{
+		md = _buffer_copy(meta, msize);
+		mf = _buffer_copy_finalize;
+	}
+
 	node_plugin_interface_t* iface = (node_plugin_interface_t*)self;
 	Addon* This = static_cast<Addon*>(iface->addon_);
 	uv_mutex_lock(&This->mutext_);
 	This->notifications_.push_back(async_callback_param_t(
-		d,len,f,hint
+		d,len,f,hint,md,mlen,mf,meta_hint
 	));
 	uv_mutex_unlock(&This->mutext_);
 	uv_async_send(&This->async_);
@@ -126,7 +135,6 @@ napi_value Addon::Init(napi_env env, napi_value exports) {
       DECLARE_NAPI_METHOD("call", Call),
       DECLARE_NAPI_METHOD("release", Release)
   };
-  
   napi_value cons;
   status =
       napi_define_class(env, "Plugin", NAPI_AUTO_LENGTH, New, nullptr, 3, properties, &cons);
@@ -246,22 +254,6 @@ napi_value Addon::Initialize(napi_env env, napi_callback_info info) {
 	return nullptr;
 }
 
-void Addon::Call(napi_env env, napi_value param, napi_value callback)
-{
-	napi_status status;
-
-	async_callback_t* ac = new async_callback_t(this);
-	status = napi_create_reference(env, callback, 1, &ac->ref);
-	assert(status == napi_ok);
-
-	void* data = NULL;
-	size_t length = 0;
-	status = napi_get_buffer_info(env_, param, &data, &length);
-	assert(status == napi_ok);
-
-	plugin_->call(plugin_, ac, (const char*)data, length);
-}
-
 napi_value Addon::Release(napi_env env, napi_callback_info info)
 {
 	Addon* obj;
@@ -281,54 +273,84 @@ napi_value Addon::Release(napi_env env, napi_callback_info info)
 napi_value Addon::Call(napi_env env, napi_callback_info info) 
 {
 	napi_status status;
-	
+	void   *data = NULL, *meta = NULL;
+	size_t len = 0, mlen = 0;
+
+
 	size_t argc = 3;
 	napi_value args[3];
 	napi_value jsthis;
 	status = napi_get_cb_info(env, info, &argc, args, &jsthis, nullptr);
 	assert(status == napi_ok);
+	assert(argc >= 2);
 
 	napi_valuetype valuetype;
+
+	//data is mandatory
 	status = napi_typeof(env, args[0], &valuetype);
 	assert(status == napi_ok);
+	assert(valuetype != napi_undefined);
+	status = napi_get_buffer_info(env, args[0], &data, &len);
+	assert(status == napi_ok);
+	assert(data);
+	assert(len);
 
-	void* data = NULL;
-	size_t len = 0;
-	//	napi_typedarray_type type;
-	if (valuetype != napi_undefined) {
-		status = napi_get_buffer_info(env, args[0],	&data, &len);
-
-		assert(status == napi_ok);
+	napi_value* callback = NULL;
+	napi_value* meta_value = NULL;
+	if (argc == 2) 
+	{
+		//no meta
+		callback = &args[1];
 	}
-
-	napi_value cb = args[1];
+	else
+	{
+		meta = &args[1];
+		callback = &args[2];
+	}
+	
+	//callback is mandatory
+	status = napi_typeof(env, *callback, &valuetype);
+	assert(status == napi_ok);
+	assert(valuetype == napi_function);
 
 	Addon* obj;
 	status = napi_unwrap(env, jsthis, reinterpret_cast<void**>(&obj));
 	assert(status == napi_ok);
-	obj->Call(env, args[0], cb);
 	
+	async_callback_t* ac = new async_callback_t(obj);
+	status = napi_create_reference(env, *callback, 1, &ac->ref);
+	assert(status == napi_ok);
+
+	if (meta)
+	{
+		status = napi_get_buffer_info(env, *meta_value, &meta, &mlen);
+		assert(status == napi_ok);
+	}
+
+	node_plugin_interface_t* plugin = obj->plugin_;
+	plugin->call(plugin, ac, data, len, meta, mlen);
+
 	return nullptr;
 }
 
-napi_status Addon::to_buffer(async_callback_param_t* ac,napi_value* pvalue)
+
+size_t Addon::make_args(async_callback_param_t* ac, napi_value argv[], size_t argc)
 {
-	napi_status status;
-	status = napi_create_buffer_copy(
-			env_, ac->size, (const void*)ac->data, NULL, pvalue);
-	// if (ac->finalize) {
-	// 	status = napi_create_external_buffer(env_,
-	// 		ac->size, (void*)ac->data,
-	// 		(napi_finalize)ac->finalize, ac->hint, pvalue);
-	// }
-	// else {
-	// 	status = napi_create_buffer_copy(
-	// 		env_, ac->size, (const void*)ac->data, NULL, pvalue);
+	size_t n = 0;
+	if (argc >= 1)
+	{
+		napi_create_buffer_copy(env_, ac->size, (const void*)ac->data, NULL, argv);
+		n++;
+	}
 
-	// }
-	return status;
-
+	if (argc >= 2)
+	{
+		napi_create_buffer_copy(env_, ac->msize, (const void*)ac->meta, NULL, (argv+1));
+		n++;
+	}
+	return n;
 }
+
 
 void Addon::Initial()
 {
@@ -362,19 +384,6 @@ void Addon::Initial()
 		initial_ref_ = nullptr;
 		plugin_inited_ = false;
 	}
-	// if (plugin_)
-	// {
-	// 	node_plugin_interface_terminate(plugin_);
-	// 	plugin_ = nullptr;
-	// }
-
-
-	// if (handle_) {
-	// 	_dlclose(handle_);
-	// 	handle_ = NULL;
-	// }
-	// uv_mutex_destroy(&mutext_);
-	// uv_close((uv_handle_t*)&async_, NULL);
 
 }
 
@@ -414,7 +423,7 @@ void Addon::OnEvent()
 	napi_value global;
 	status = napi_get_global(env_, &global);
 	assert(status == napi_ok);
-
+	//callback
 	for (std::list<async_callback_t*>::iterator it = cbs.begin();
 		it != cbs.end(); it++)
 	{
@@ -424,11 +433,11 @@ void Addon::OnEvent()
 		assert(status == napi_ok);
 		napi_value result;
 		napi_value argv[2];
-		status = to_buffer(ac,&argv[0]);
-		assert(status == napi_ok);
+
+		size_t argc = make_args(ac, argv, 1);
+
 		status = napi_create_int32(env_, ac->status, &argv[1]);
 		assert(status == napi_ok);
-
 		status = napi_call_function(env_, global, cb, 2, argv, &result);
 		assert(status == napi_ok);
 
@@ -438,7 +447,8 @@ void Addon::OnEvent()
 		}
 		delete ac;
 	}
-
+	
+	//notify
 	for (std::list<async_callback_param_t>::iterator it = ntfs.begin();
 		it != ntfs.end(); it++) {
 
@@ -448,19 +458,21 @@ void Addon::OnEvent()
 		status = napi_get_reference_value(env_, this->notifier_ref_, &cb);
 		assert(status == napi_ok);
 		napi_value result;
-		napi_value argv[1];
+		napi_value argv[2];
 
-		status = to_buffer(&ac, &argv[0]);
-		assert(status == napi_ok);
+		size_t argc = make_args(&ac, argv, 2);
 
-
-		status = napi_call_function(env_, global, cb, 1, argv, &result);
+		status = napi_call_function(env_, global, cb, argc, argv, &result);
 		assert(status == napi_ok);
 		if (ac.finalize)
 		{
 			ac.finalize(env_, (void*)ac.data, ac.hint);
 		}
 
+		if (ac.mfinalize)
+		{
+			ac.mfinalize(env_, (void*)ac.meta, ac.mhint);
+		}
 	}
 	napi_close_handle_scope(env_, scope);
 }
@@ -629,24 +641,7 @@ void Addon::Release(napi_value callback)
 
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/****************************************/
 napi_value Init(napi_env env, napi_value exports) {
   return Addon::Init(env, exports);
 }
