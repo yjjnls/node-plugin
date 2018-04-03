@@ -1,12 +1,13 @@
 #include "../../addon/plugin_interface.h"
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
-#include <string>
+//#include <stdio.h>
+//#include <string.h>
+//#include <malloc.h>
+//#include <string>
+#include <ctype.h>
 
-bool convert(plugin_buffer_t* data,
-					plugin_buffer_t* meta,
-					plugin_buffer_t* result);
+int convert(plugin_buffer_t* data,
+			plugin_buffer_t* meta,
+			plugin_buffer_t* result);
 
 #define VERSION "0.1.1"
 ///////////////////////////////////////////////////////////////
@@ -39,8 +40,8 @@ static void call(const plugin_interface_t* self,
 	             plugin_callback_fn        callback)
 {
 	plugin_buffer_t result;
-	bool ok = convert(data, meta, &result);
-	callback(self, context, ok ? 0:1, &result);
+	int status = convert(data, meta, &result);
+	callback(self, context, status, &result);
 	return;
 }
 
@@ -59,18 +60,18 @@ PLUGIN_INTERFACE(VERSION, init, call, terminate);
 
 
 
-static bool convert(plugin_buffer_t* data,
+static int convert(plugin_buffer_t* data,
 	plugin_buffer_t* meta,
 	plugin_buffer_t* result)
 {
 	if (!data) {
 		plugin_buffer_string_set(result, "string is null.");
-		return false;
+		return 1;
 	}
 
 	if (!meta) {
 		plugin_buffer_string_set(result, "action is null.");
-		return false;
+		return 1;
 	}
 
 	const char* action = (const char*)meta->data;
@@ -89,13 +90,13 @@ static bool convert(plugin_buffer_t* data,
 	{
 		for (int i = 0; i < result->size; i++)
 		{
-			txt[i] = (char)tolower(txt[i]);			
+			txt[i] = (char)tolower(txt[i]);
 		}
 	}
 	else {
 		plugin_buffer_string_set(result, "action not support.");
-		return false;
+		return 1;
 
 	}
-	return true;
+	return 0;
 }

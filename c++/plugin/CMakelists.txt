@@ -6,5 +6,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(plugin)
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-add_library( calc SHARED example/calc.cpp)
-set_target_properties(calc PROPERTIES VERSION 1.1 SOVERSION 1)
+include_directories(converter)
+add_library( converter SHARED converter/main.c)
+set_target_properties(converter PROPERTIES VERSION 1.1 SOVERSION 1)

@@ -6,47 +6,48 @@
 #include <map>
 #include <list>
 #include <string>
-#include "node_plugin_interface.h"
+#include <assert.h>
+#include <stdio.h>
+
+#include "plugin_interface.h"
 class Addon;
 
-struct async_callback_param_t {
+struct async_callback_t //: public async_callback_param_t 
+{
+	async_callback_t(const Addon* p, napi_ref cb_ref = nullptr)
+		:addon(p), ref(cb_ref),status(0)
+	{
+		memset(&data, 0, sizeof(data));
+	}
 
-	async_callback_param_t()
-		: data(NULL), size(0)
-		, finalize(NULL), hint(NULL)
-		, meta(NULL),msize(0)
-		, mfinalize(NULL), mhint(NULL)
-	{}
+	const Addon*     addon;
+	napi_ref         ref;
+	int              status;
 
-	async_callback_param_t(const void* d,size_t len,
-		NODE_PLUGIN_FINALIZE finalizer, void* hinter,
-		const void* md, size_t mlen,
-		NODE_PLUGIN_FINALIZE mf, void* mh)
-		: data(d), size(len)
-		, finalize(finalizer), hint(hinter)
-		, meta(md), msize(mlen),mfinalize(mf),mhint(mh)
-	{}
+	plugin_buffer_t  data;
 
-	const void* data;
-	size_t      size;
-	NODE_PLUGIN_FINALIZE finalize;
-	void*        hint;
-
-	const void* meta;
-	size_t      msize;
-	NODE_PLUGIN_FINALIZE mfinalize;
-	void*       mhint;
 
 };
 
-struct async_callback_t : public async_callback_param_t {
-	async_callback_t(Addon* p)
-		: addon(p), ref(nullptr),status(0)
-	{}
 
-	Addon*     addon;
-	napi_ref   ref;
-	int         status;
+struct async_notification_t
+{
+	async_notification_t(plugin_buffer_t* d, plugin_buffer_t* m)
+		:data(d),meta(m)
+	{}
+	plugin_buffer_t* data;
+	plugin_buffer_t* meta;
+
+
+	virtual ~async_notification_t() {
+		if (data && data->release) {
+			data->release(data);
+		}
+		if (meta && meta->release) {
+			meta->release(meta);
+		}
+
+	}
 
 };
 
@@ -57,86 +58,124 @@ class Addon {
 		RUN,//running
 		TERM    //terminating
 	};
+
+
 public:
+
+	/**************************************/
+	/*            NAPI                    */ 
+	/**************************************/
 	static napi_value Init(napi_env env, napi_value exports);
 	static void Destructor(napi_env env, void* nativeObject, void* finalize_hint);
-
-
-
 private:
-	explicit Addon(const std::string& basename);
-	~Addon();
-
 	static napi_value New(napi_env env, napi_callback_info info);
 	static napi_value Initialize(napi_env env, napi_callback_info info);
 	static napi_value Call(napi_env env, napi_callback_info info);
 	static napi_value Release(napi_env env, napi_callback_info info);
+
+	static napi_value Setup(napi_env env, napi_callback_info info);
+	static napi_value Teardown(napi_env env, napi_callback_info info);
+
+	static napi_value GetValue(napi_env env, napi_callback_info info);
+	static napi_value GetError(napi_env env, napi_callback_info info);
+	static napi_ref constructor;
+
+	struct lib_t {
+		lib_t() : handle(NULL),create(NULL),destroy(NULL)
+		{}
+		void* handle;
+		plugin_interface_initialize_fn create;
+		plugin_interface_terminate_fn  destroy;
+	};
+private:
+	explicit Addon(const std::string& path, const std::string& dir, napi_value* notify = NULL);
+	~Addon();
+
 	static void       OnEvent(uv_async_t* handle);
 
-	/////
-	//void Call(napi_env env, napi_value param, napi_value callback);//TO DEL
+	//void async_call(napi_env env, napi_callback_info info);
 	//
-	//void Call(napi_env env, napi_value data, napi_value meta, napi_value callback);//TO DEL
+	static void plugin_notify(const plugin_interface_t* self,
+		plugin_buffer_t*    data,
+		plugin_buffer_t*    meta)
+	{
+		Addon* addon = static_cast<Addon*>((void*)self->context);
+		addon->Notify(data, meta);
 
-	bool Initialize(const std::string& dir, const std::string& options, napi_value notify, napi_value init_cb);
+	}
+	void Notify(plugin_buffer_t* data, plugin_buffer_t* meta);
 
+
+	static void initialize_callback(const plugin_interface_t* self,
+		const void* context, int status, plugin_buffer_t*    data);
+
+	bool Initialize(napi_value data, napi_value callback);
+
+	static void terminate_callback(const plugin_interface_t* self,
+		const void* context, int status, plugin_buffer_t*    data);
+
+	bool Terminate( napi_value callback);
+
+	static void callback(const plugin_interface_t* self,
+		const void* context, int status, plugin_buffer_t* data);
+
+	void Call(napi_value* args);
+
+	void Push(async_callback_t* ac);
 	void OnEvent();
-	bool Open(const std::string& dir);
-	const std::string error() const { return error_; }
-	napi_status to_buffer(async_callback_param_t* cb, napi_value* pvalue);
 	
-	size_t make_args(async_callback_param_t* cb, napi_value argv[], size_t argc);
+	bool Setup();
+	void Teardown();
 
-	void Release(napi_value callback);
-	void Terminate();
-	void Initial();
+	const std::string error() const { return error_; }
+	void ExecCallback(async_callback_t* ac, napi_value global);
+	void ExecNotification(async_notification_t* ntf, napi_value global);
 
-
-	node_plugin_interface_initialize_fn node_plugin_interface_initialize;
-	node_plugin_interface_terminate_fn  node_plugin_interface_terminate;
-
-	static void init_done(const void* self, int status, char *msg);
-	static void terminate_done(const void* self, int status, char *msg);
-	static void plugin_call_return(const void* self, const void* context,
-		const void* data, size_t size,
-		int status,
-		node_plugin_finalize_fn finalizer,
-		void* hint);
-
-	static void plugin_notify(const void* self,
-		const void* data, size_t size,
-		node_plugin_finalize_fn finalizer,void* hint,
-		const void* meta, size_t msize,
-		node_plugin_finalize_fn meta_finalizer, void* meta_hint);
-
-
-
-
-
-	static napi_ref constructor;
+	//void Release(napi_value callback);
+	//void Terminate();
+	//void Initial();
+	//
+	//
+	//
+	//static void init_done(const void* self, int status, char *msg);
+	//static void terminate_done(const void* self, int status, char *msg);
 	napi_env env_;
 	napi_ref wrapper_;
 
 	uv_mutex_t      mutext_;
 	uv_async_t      async_;
 	std::list<async_callback_t*>       callbacks_;
-	std::list<async_callback_param_t> notifications_;
+	std::list<async_notification_t*>  notifications_;
 	std::string error_;
-	std::string basename_; //filenmae of the plutin
-	void*       handle_;//dynamic lib handle
+	std::string basename_; //filenmae of the plugin
+	std::string directory_; //directory of the plugin 
+	//void*       handle_;//dynamic lib handle
 
-	napi_ref   notifier_ref_;
-	napi_ref   initial_ref_;
-	napi_ref   terminater_ref_;
+	napi_ref           notifier_ref_;
+	//plugin_notify_fn   notify_;
 
-	node_plugin_interface_t* plugin_;
+
+
+
+	//napi_ref   initial_ref_;
+	//napi_ref   terminater_ref_;
+
+	
 	state_t state_;
-	bool    plugin_terminated_;
-	bool    plugin_inited_;
-	int status_;
-	std::string msg_;
+	//bool    plugin_terminated_;
+	//bool    plugin_inited_;
+	//int status_;
+	//std::string msg_;
 	std::string version_;
 
+	lib_t   lib_;
+	plugin_interface_t* plugin_;
+
+	//bool                running_;
 };
+
+#ifndef __NODE_PLUGIN_ADDON_VERSION__
+#define __NODE_PLUGIN_ADDON_VERSION__ "0.2.0"
+#endif
 
 #endif

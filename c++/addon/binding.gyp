@@ -1,8 +1,8 @@
 {
   "targets": [
     {
-      "target_name": "node_plugin",
-      "sources": [ "addon.cc", "_dlfcn.cc" ]
+      "target_name": "plugin",
+      "sources": [ "addon.cc", "addon.h","addon-napi.cc","_dlfcn.cc" ]
     }
   ]
 }

@@ -1,103 +1,108 @@
 var path = require('path');
 var os = require('os');
-const EventEmitter = require('events').EventEmitter;
+var fs= require("fs")
+
 var Promise = require('bluebird');
 
 platform = os.platform()
 arch = os.arch()
 _EXT = '.so'
 if (platform == 'win32') {
-	platform = 'windows'
+	platform = 'win'
 	_EXT = '.dll'
 }
+var node_plugin = require(`./bin/${platform}/${arch}/plugin.node`);
 
-var node_plugin = require('./bin/' + platform + '-' + arch)
+class Plugin  {
+	
+	constructor(name, dir ,notify) {		
+		
+		this.name    = name;
 
-// todo: add version
-class Base_Plugin extends EventEmitter {
-	constructor(name) {
-		super();
-		this.name = name;
-		this.plugin_ = new node_plugin.Plugin(name + _EXT);
+		if( notify == undefined ){
+			if( dir == undefined ){
+				dir = '';
+			} else if ( typeof(dir) == 'function'){
+				notify = dir
+				dir = '';
+			}
+		}
+
+
+		this.notify_ = notify;
+		this.dir_    = dir
+		this.__file__=`${__dirname}/bin/${platform}/${arch}/plugin.node`
 	}
 
-	initialize(options, callback) {
-		var dir = "";
-		var opt = "";
-
-		if (options) {
-			if (options.plugin) {
-				if (options.plugin.directory) {
-					dir = options.plugin.directory;
-				}
-				delete options.plugin;
-			}
-			opt = JSON.stringify(options);
-		}
-
+	initialize(option) {
 		let self = this;
-		let notify = (data,meta) => {
-			self.emit('notify', data,meta);
+		if( option == undefined )
+		{
+			option = null;
 		}
-		this.plugin_.initialize(dir, opt, notify, callback);
+		var filename = `${this.name}${_EXT}`
+		if( this.dir_){
+			filename = `${this.dir_}/${this.name}${_EXT}`
+		}
+
+
+		if (!fs.existsSync( filename) )
+		{
+			return new Promise(function (resolve, reject) {
+				reject(`plugin not exists, basename=${self.name}${_EXT} dir=${self.dir_}`);
+			})
+		}
+
+		self.plugin_ = new node_plugin.Plugin(`${self.name}${_EXT}`,self.dir_, self.notify_ )
+
+		if( !self.plugin_.setup() ){
+			return new Promise(function (resolve, reject) {
+				reject(self.plugin_.error);
+			})
+		}
+
+		return new Promise(function (resolve, reject) {
+			self.plugin_.initialize(option, (status,res) => {
+				if (status == 0)
+					resolve(res);
+				else
+					reject(res);
+			})
+		})
 	}
 
 	terminate(callback) {
-		this.plugin_.release(callback);
-	}
-
-	call(data,meta, callback) {
-		if( callback == undefined ){
-			callback = meta;
-			meta = undefined
-		}
-		this.plugin_.call(data,meta, callback);
-	}
-
-}
-
-
-class Plugin extends EventEmitter {
-	constructor(name) {
-		super();
-		this.plugin_ = new Base_Plugin(name);
-		this.version_ = undefined;
-		
 		let self = this;
-		this.plugin_.on('notify', (data,meta) => {
-			self.emit('notify', data,meta);
-		})
-	}
-	version() {
-		return this.version_;
-	}
-	initialize(options) {
-		let self = this;
+
 		return new Promise(function (resolve, reject) {
-			self.plugin_.initialize(options, (status, res, version) => {
-				self.version_ = version;
+			self.plugin_.release( (status,res) => {
+				setTimeout(function() {
+					self.plugin_.teardown()
+				}, 0);
+
 				if (status == 0)
+				{
 					resolve(res);
+				}	
 				else
 					reject(res);
 			})
 		})
 	}
-	terminate() {
-		let self = this;
-		return new Promise(function (resolve, reject) {
-			self.plugin_.terminate((status, res) => {
-				if (status == 0)
-					resolve(res);
-				else
-					reject(res);
-			})
-		})
-	}
+
 	call(data,meta) {
 		let self = this;
+		if( meta == undefined ){
+			meta = null;
+		}
+
+		if( data == undefined ){
+			data = null;
+		}
+
 		return new Promise(function (resolve, reject) {
-			self.plugin_.call(data, meta,(res, status) => {
+			self.plugin_.call(data, meta, (status,res) => {
+				console.log("$$$$",status)
 				if (status == 0)
 					resolve(res);
 				else

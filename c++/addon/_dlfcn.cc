@@ -36,11 +36,10 @@ std::string _GetLastError()
 int  _chdir(const char *dir)
 {
 #ifdef _WIN32
-	::SetCurrentDirectoryA(dir);
+	return 0 != ::SetCurrentDirectoryA(dir);
 #else
-	::chdir(dir);
+	return 0 == ::chdir(dir);
 #endif
-	return 0;
 }
 
 int _getcwd(char* buf, size_t size)
