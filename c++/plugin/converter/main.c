@@ -7,7 +7,7 @@ typedef struct statistic_t {
 	int lower;
 	int illegal;
 }statistic_t;
-#define THIS_INSTANCE( p ) ((plugin_interface_t*) p->private_data)
+#define THIS_INSTANCE( p ) ((plugin_interface_t*) p->instance)
 
 
 
@@ -27,20 +27,20 @@ static void init (const plugin_interface_t* self,
 	if (data) {
 	}
 	plugin_interface_t* iface = (plugin_interface_t*)self;
-	iface->private_data = malloc(sizeof(statistic_t));
-	memset(iface->private_data, 0, sizeof(statistic_t));
+	iface->instance = malloc(sizeof(statistic_t));
+	memset(iface->instance, 0, sizeof(statistic_t));
     if (callback){
 		callback(self, context, 0, NULL);
     }
 }
 
-static void _release(plugin_buffer_t* self) {
-	if (self->data) {
-		free( self->data);
-		self->data = NULL;
-	}
-	free( self);
-}
+//static void _release(plugin_buffer_t* self) {
+//	if (self->data) {
+//		free( self->data);
+//		self->data = NULL;
+//	}
+//	free( self);
+//}
 
 
 static void call(const plugin_interface_t* self,
@@ -85,11 +85,11 @@ static void terminate(const plugin_interface_t* self,
     {
 		callback(self,context, 0, NULL);
     }
-	if (self->private_data) {
-		free(self->private_data);
+	if (self->instance) {
+		free(self->instance);
 
 		plugin_interface_t* iface = (plugin_interface_t*)self;
-		iface->private_data = NULL;
+		iface->instance = NULL;
 	}
 }
 
@@ -118,7 +118,7 @@ static int convert(plugin_interface_t* iface,
 
 	plugin_buffer_safe_move(data, result);
 	char* txt = (char*)result->data;
-	statistic_t* ps = (statistic_t*)iface->private_data;
+	statistic_t* ps = (statistic_t*)iface->instance;
 	if (!strncmp(action, "upper", size))
 	{
 		for (int i = 0; i < result->size; i++)

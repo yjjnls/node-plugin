@@ -104,7 +104,7 @@ typedef struct plugin_interface_t {
 	const void* context;
 
 	//private
-	void* private_data;// the plugin application private data
+	void* instance;// the plugin application instance
 }plugin_interface_t;
 
 
@@ -150,6 +150,7 @@ plugin_interface_t* plugin_interface_initialize(                    \
 	iface->call = _call_;                                           \
 	iface->terminate = _terminate_;	                                \
 	iface->version   = _VERSION;                                    \
+    iface->instance  = NULL;                                        \
 	return iface;													\
 }																	\
 																	\

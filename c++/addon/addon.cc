@@ -82,7 +82,11 @@ bool Addon::Initialize(napi_value data, napi_value callback)
 	status = napi_typeof(env_, data, &valuetype);
 	assert(status == napi_ok);
 
-	if (valuetype != napi_object)
+	bool is_buffer;
+	status = napi_is_buffer(env_, data, &is_buffer);
+	assert(status == napi_ok);
+
+	if (!is_buffer)
 	{
 		plugin_->init(plugin_, ac, NULL, Addon::initialize_callback);
 	}
