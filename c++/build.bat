@@ -77,7 +77,7 @@ cmake %options% ..
 set options=--config Release
 if defined _DEBUG set options=--config Debug
 cmake --build . --target ALL_BUILD %options%
-if %errorlevel% != 0 goto _ERROR
+if %errorlevel% neq 0 goto _ERROR
 
 if defined _DEBUG (
     copy Debug\converter.dll %__bin__%\.

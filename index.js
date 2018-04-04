@@ -18,7 +18,6 @@ class Plugin  {
 	constructor(name, dir ,notify) {		
 		
 		this.name    = name;
-
 		if( notify == undefined ){
 			if( dir == undefined ){
 				dir = '';
@@ -28,10 +27,8 @@ class Plugin  {
 			}
 		}
 
-
 		this.notify_ = notify;
 		this.dir_    = dir
-		this.__file__=`${__dirname}/bin/${platform}/${arch}/plugin.node`
 	}
 
 	initialize(option) {
@@ -102,7 +99,6 @@ class Plugin  {
 
 		return new Promise(function (resolve, reject) {
 			self.plugin_.call(data, meta, (status,res) => {
-				console.log("$$$$",status)
 				if (status == 0)
 					resolve(res);
 				else
@@ -112,8 +108,11 @@ class Plugin  {
 	}
 }
 
+Plugin.__file__=`${__dirname}/bin/${platform}/${arch}/plugin.node`
+
 module.exports = {
-	Plugin: Plugin
+	Plugin: Plugin,
+	DYNAMIC_MODULE_SUFFIX : _EXT
 }
 
 

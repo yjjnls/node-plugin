@@ -13,8 +13,8 @@ if( buf.release ){                 \
 
 
 
-Addon::Addon(const std::string& name,const std::string& dir, napi_value* notify)
-	: env_(nullptr), wrapper_(nullptr)
+Addon::Addon(napi_env env,const std::string& name,const std::string& dir, napi_value* notify)
+	: env_(env), wrapper_(nullptr)
 	, plugin_(nullptr)
 	, notifier_ref_(nullptr)
 	, state_(Addon::IDLE)
@@ -39,7 +39,7 @@ Addon::~Addon()
 }
 
 
-void Addon::initialize_callback(const plugin_interface_t* self,
+void Addon::initialize_callback(const void* self,
 	const void* context, int status,
 	plugin_buffer_t*    data)
 {
@@ -185,12 +185,7 @@ void Addon::Teardown()
 		it != notifications_.end(); it++)
 	{
 		async_notification_t* n = *it;
-		if (n->data && n->data->release) {
-			n->data->release(n->data);
-		}
-		if (n->meta && n->meta->release) {
-			n->meta->release(n->meta);
-		}
+
 
 		delete *it;
 	}
@@ -221,8 +216,9 @@ void Addon::Teardown()
 
 void Addon::Notify(plugin_buffer_t* data, plugin_buffer_t* meta)
 {
+	async_notification_t* ac = new async_notification_t(data, meta);
 	uv_mutex_lock(&mutext_);
-	notifications_.push_back( new async_notification_t( data,meta));
+	notifications_.push_back( ac);
 	uv_mutex_unlock(&mutext_);
 	uv_async_send(&async_);
 
@@ -261,21 +257,21 @@ inline void Addon::ExecCallback(async_callback_t* ac,napi_value global)
 
 inline void Addon::ExecNotification(async_notification_t* ntf, napi_value global)
 {
-	if (notifier_ref_ && (ntf->data || ntf->meta)) {
+	if (notifier_ref_ && (ntf->data.data || ntf->meta.data)) {
 		napi_value cb;
 		napi_status status = napi_get_reference_value(env_, notifier_ref_, &cb);
 		assert(status == napi_ok);
 
 		napi_value argv[2] = { nullptr,nullptr };
 		size_t argc = 2;
-		plugin_buffer_t* d = ntf->data;
-		plugin_buffer_t* m = ntf->meta;
-		if (d) {
-			napi_create_buffer_copy(env_, d->size, (const void*)d->data, NULL, &argv[0]);
+		plugin_buffer_t& d = ntf->data;
+		plugin_buffer_t& m = ntf->meta;
+		if (d.data && d.size) {
+			napi_create_buffer_copy(env_, d.size, (const void*)d.data, NULL, &argv[0]);
 		}
 
-		if (m) {
-			napi_create_buffer_copy(env_, m->size, (const void*)m->data, NULL, &argv[1]);
+		if (m.data && d.size) {
+			napi_create_buffer_copy(env_, m.size, (const void*)m.data, NULL, &argv[1]);
 		}
 
 		napi_value result;
@@ -320,7 +316,7 @@ void Addon::OnEvent()
 	napi_close_handle_scope(env_, scope);
 }
 
-void Addon::terminate_callback(const plugin_interface_t* self,
+void Addon::terminate_callback(const void* self,
 	const void* context, int status, plugin_buffer_t*    data)
 {
 	async_callback_t* ac = (async_callback_t*)context;
@@ -381,7 +377,7 @@ static void  default_release(plugin_buffer_t* self)
 	return;
 }
 
-void Addon::callback(const plugin_interface_t* self,
+void Addon::callback(const void* self,
 	const void* context, int status, plugin_buffer_t* data)
 {
 	async_callback_t* ac = (async_callback_t*)context;

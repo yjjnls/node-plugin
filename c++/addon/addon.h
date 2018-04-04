@@ -20,6 +20,11 @@ struct async_callback_t //: public async_callback_param_t
 		memset(&data, 0, sizeof(data));
 	}
 
+	~async_callback_t() {
+		if ( data.release) {
+			data.release(&data);
+		}
+	}
 	const Addon*     addon;
 	napi_ref         ref;
 	int              status;
@@ -33,18 +38,27 @@ struct async_callback_t //: public async_callback_param_t
 struct async_notification_t
 {
 	async_notification_t(plugin_buffer_t* d, plugin_buffer_t* m)
-		:data(d),meta(m)
-	{}
-	plugin_buffer_t* data;
-	plugin_buffer_t* meta;
+		
+	{
+		memset(&data, 0, sizeof(data));
+		memset(&meta, 0, sizeof(meta));
+		if (d) {
+			plugin_buffer_safe_move(d, &data);
+		}
+		if (m) {
+			plugin_buffer_safe_move(m, &meta);
+		}
+	}
+	plugin_buffer_t data;
+	plugin_buffer_t meta;
 
 
 	virtual ~async_notification_t() {
-		if (data && data->release) {
-			data->release(data);
+		if (data.release) {
+			data.release(&data);
 		}
-		if (meta && meta->release) {
-			meta->release(meta);
+		if (meta.release) {
+			meta.release(&meta);
 		}
 
 	}
@@ -88,35 +102,36 @@ private:
 		plugin_interface_terminate_fn  destroy;
 	};
 private:
-	explicit Addon(const std::string& path, const std::string& dir, napi_value* notify = NULL);
+	explicit Addon(napi_env env,const std::string& name, const std::string& dir, napi_value* notify = NULL);
 	~Addon();
 
 	static void       OnEvent(uv_async_t* handle);
 
 	//void async_call(napi_env env, napi_callback_info info);
 	//
-	static void plugin_notify(const plugin_interface_t* self,
+	static void plugin_notify(const void* self,
 		plugin_buffer_t*    data,
 		plugin_buffer_t*    meta)
 	{
-		Addon* addon = static_cast<Addon*>((void*)self->context);
+		plugin_interface_t* iface = (plugin_interface_t*)self;
+		Addon* addon = static_cast<Addon*>((void*)iface->context);
 		addon->Notify(data, meta);
 
 	}
 	void Notify(plugin_buffer_t* data, plugin_buffer_t* meta);
 
 
-	static void initialize_callback(const plugin_interface_t* self,
+	static void initialize_callback(const void* self,
 		const void* context, int status, plugin_buffer_t*    data);
 
 	bool Initialize(napi_value data, napi_value callback);
 
-	static void terminate_callback(const plugin_interface_t* self,
+	static void terminate_callback(const void* self,
 		const void* context, int status, plugin_buffer_t*    data);
 
 	bool Terminate( napi_value callback);
 
-	static void callback(const plugin_interface_t* self,
+	static void callback(const void* self,
 		const void* context, int status, plugin_buffer_t* data);
 
 	void Call(napi_value* args);

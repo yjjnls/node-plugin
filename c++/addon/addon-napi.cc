@@ -43,18 +43,16 @@ napi_value Addon::New(napi_env env, napi_callback_info info) {
 		std::string dir(path);
 
 		napi_value* notify = NULL;
-		status = napi_typeof(env, args[1], &valuetype);
+		status = napi_typeof(env, args[2], &valuetype);
 		assert(status == napi_ok);
 		if (valuetype == napi_function)
 		{
-			notify = &args[1];
+			notify = &args[2];
 		}
 
 
-		Addon* obj = new Addon(name, dir,notify);
+		Addon* obj = new Addon(env,name, dir,notify);
 
-
-		obj->env_ = env;
 		status = napi_wrap(env,
 			jsthis,
 			reinterpret_cast<void*>(obj),

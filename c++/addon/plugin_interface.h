@@ -63,7 +63,7 @@ inline static int plugin_buffer_safe_move(plugin_buffer_t* src, plugin_buffer_t*
 
 inline static void plugin_buffer_string_set(plugin_buffer_t* src, const char* message) {
 	src->data = _strdup(message);
-	src->size = strlen(message) + 1;
+	src->size = strlen(message);
 	
 	src->move = _default_plugin_buffer_move;
 	src->release = _default_plugin_buffer_release;
@@ -102,6 +102,9 @@ typedef struct plugin_interface_t {
 
 	const char* version;
 	const void* context;
+
+	//private
+	void* private_data;// the plugin application private data
 }plugin_interface_t;
 
 
