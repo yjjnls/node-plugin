@@ -59,7 +59,10 @@ class Plugin  {
 		}
 
 		return new Promise(function (resolve, reject) {
-			self.plugin_.initialize(option, (status,res) => {
+			var text = JSON.stringify(option,'utf8');
+			var opt = Buffer.from(text,'utf8');
+
+			self.plugin_.initialize(opt, (status,res) => {
 				if (status == 0)
 					resolve(res);
 				else

@@ -5,26 +5,6 @@ let expect = chai.expect,
 var Converter = require('./converter').Converter
 
 
-////var convert = new plugin('calc','E:/github.com/node-plugin/c++/plugin/build/Debug/');
-//console.log(Plugin.__file__)
-//var convert = new Plugin('converter',path.dirname(Plugin.__file__));
-//
-//async function main(){
-//        await convert.initialize()
-//   
-//        result = await convert.call( Buffer.from('AaBbCc','utf8'),Buffer.from('lower','utf8'));
-//        console.log("Main end!",result.toString('utf8'))
-//
-//        convert.terminate();
-//
-//    
-//}
-//main().then( data=>{
-//    console.log("SUCESS!")
-//}).catch( err =>{
-//    console.log("ERR!",err.toString('utf8'))
-//})
-//
 describe('Node-Plugin', function () {
 
     describe('#basic', function () {
