@@ -29,6 +29,12 @@ describe('Node-Plugin', function () {
             convert = null
         });
 
+        it(`version`, async () => {
+            
+            assert.isString(  convert.plugin_.version)
+
+        });
+
         it(`call`, async () => {
             result = await convert.convert('upper','AaBbCc')
             assert.equal( result , 'AABBCC')
