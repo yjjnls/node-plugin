@@ -262,7 +262,7 @@ inline void Addon::ExecCallback(async_callback_t* ac,napi_value global)
 inline void Addon::ExecNotification(async_notification_t* ntf, napi_value global)
 {
 	if (notifier_ref_ && (ntf->data.data || ntf->meta.data)) {
-		napi_value cb;
+		napi_value cb=nullptr;
 		napi_status status = napi_get_reference_value(env_, notifier_ref_, &cb);
 		assert(status == napi_ok);
 
