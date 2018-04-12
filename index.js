@@ -29,6 +29,7 @@ class Plugin  {
 
 		this.notify_ = notify;
 		this.dir_    = dir
+		this.version = null;
 	}
 
 	initialize(option) {
@@ -57,6 +58,7 @@ class Plugin  {
 				reject(self.plugin_.error);
 			})
 		}
+		this.version = self.plugin_.version;
 
 		return new Promise(function (resolve, reject) {
 			var text = JSON.stringify(option,'utf8');
@@ -75,6 +77,7 @@ class Plugin  {
 		let self = this;
 
 		return new Promise(function (resolve, reject) {
+
 			self.plugin_.release( (status,res) => {
 				setTimeout(function() {
 					self.plugin_.teardown()
