@@ -7,7 +7,6 @@ CMakeFiles*
 *.dir*
 x64
 Release*
-*build*
 *node_modules
 /cache
 build
