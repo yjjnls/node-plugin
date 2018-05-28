@@ -15,11 +15,11 @@ if( buf.release ){                 \
 
 Addon::Addon(napi_env env,const std::string& name,const std::string& dir, napi_value* notify)
 	: env_(env), wrapper_(nullptr)
-	, plugin_(nullptr)
-	, notifier_ref_(nullptr)
-	, state_(Addon::IDLE)
 	, basename_(name)
 	, directory_(dir)
+	, notifier_ref_(nullptr)
+	, state_(Addon::IDLE)
+	, plugin_(nullptr)
 {
 	uv_async_init(uv_default_loop(), &async_, Addon::OnEvent);
 	async_.data = this;
@@ -116,7 +116,7 @@ bool Addon::Setup()
 	void* handle = NULL;
 
 	_getcwd(_CWD, sizeof(_CWD));
-
+	
 	if (!directory_.empty())
 	{
 		
@@ -140,7 +140,10 @@ bool Addon::Setup()
 
 	if (!handle)
 	{
-		error_ = path + " : " +_dlerror();
+#ifndef _WIN32
+		error_ += " maybe `LD_LIBRARY_PATH` is not set. ";
+#endif
+		error_ += path + " : " +_dlerror();
 		return false;
 	}
 	lib_.handle = handle;
@@ -183,17 +186,19 @@ void Addon::Teardown()
 		}
 		delete *it;
 	}
-	callbacks_.swap(std::list<async_callback_t*>());
+	std::list<async_callback_t*> cb_tmp;
+	callbacks_.swap(cb_tmp);
 
 	for (std::list<async_notification_t*>::iterator it = notifications_.begin();
 		it != notifications_.end(); it++)
 	{
-		async_notification_t* n = *it;
+		// async_notification_t* n = *it;
 
 
 		delete *it;
 	}
-	notifications_.swap(std::list<async_notification_t*>());
+	std::list<async_notification_t*> notify_tmp;
+	notifications_.swap(notify_tmp);
 
 	napi_delete_reference(env_, notifier_ref_);
 	notifier_ref_ = nullptr;

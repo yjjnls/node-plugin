@@ -1,6 +1,6 @@
 #
 #
-# example for plug 
+# example for plugin 
 #
 #
 cmake_minimum_required(VERSION 2.8)
