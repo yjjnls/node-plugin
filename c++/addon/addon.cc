@@ -126,7 +126,7 @@ bool Addon::Setup()
 		}
 
 	}
-	std::string path = std::string(_CWD) + "/" + basename_;
+	std::string path = directory_ + "/" + basename_;
 
 	handle = _dlopen(basename_.c_str());
 
@@ -144,6 +144,7 @@ bool Addon::Setup()
 		error_ += " maybe `LD_LIBRARY_PATH` is not set. ";
 #endif
 		error_ += path + " : " +_dlerror();
+		printf("%s\n", error_.c_str());
 		return false;
 	}
 	lib_.handle = handle;
