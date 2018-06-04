@@ -58,7 +58,7 @@ void* _dlopen(const char *filename)
 #ifdef _WIN32
 	return (void*) LoadLibrary(filename);
 #else
-	return dlopen(filename, RTLD_LAZY);
+	return dlopen(filename, RTLD_NOW|RTLD_GLOBAL|RTLD_DEEPBIND);
 #endif
 }
 

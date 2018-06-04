@@ -280,7 +280,7 @@ inline void Addon::ExecNotification(async_notification_t* ntf, napi_value global
 			napi_create_buffer_copy(env_, d.size, (const void*)d.data, NULL, &argv[0]);
 		}
 
-		if (m.data && d.size) {
+		if (m.data && m.size) {
 			napi_create_buffer_copy(env_, m.size, (const void*)m.data, NULL, &argv[1]);
 		}
 
