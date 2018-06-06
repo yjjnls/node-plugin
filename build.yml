@@ -1,0 +1,44 @@
+tool: cmake
+msvs: 2017
+arch: x86_64
+steps:
+  - configure
+  - make
+  - install
+     
+projects:
+  - addon:
+      tool: node-gyp
+      location: ${__directory__}/c++/addon
+      install: 
+        - python: |
+           import os
+           import shutil
+           d = os.path.join(config.build_dir,'Release') 
+           src = os.path.join(d,'plugin.node')
+           if not os.path.isdir( d ):
+               os.makedirs(d)
+           platform = 'win'
+           if config.platform == 'linux':
+               platform = 'linux'
+           arch = config.arch
+           if arch == 'x86_64':
+               arch = 'x64'
+           d = os.path.join(os.path.dirname(__file__),'bin/%s/%s'%(platform,arch))
+           dst = d
+           if not os.path.isdir( d ):
+               os.makedirs(d)
+           shutil.copy(src,dst)
+          
+
+  - plugin:
+     location: ${__directory__}/c++/plugin
+
+  - test:
+      location : ${__directory__}
+      build_dir: ${__directory__}
+      steps:
+        - test
+      test:
+        - npm install -s
+        - npm test
