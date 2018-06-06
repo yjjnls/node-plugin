@@ -11,3 +11,4 @@ Release*
 /cache
 build
 .vscode
+package-lock.json

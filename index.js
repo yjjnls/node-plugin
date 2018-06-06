@@ -43,7 +43,6 @@ class Plugin  {
 			filename = `${this.dir_}/${this.name}${_EXT}`
 		}
 
-
 		if (!fs.existsSync( filename) )
 		{
 			return new Promise(function (resolve, reject) {

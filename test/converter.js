@@ -9,7 +9,13 @@ class Converter {
         this.lower  = 0
         this.illegal= 0
 
-        this.plugin_ = new Plugin('converter',
+        let plugin_name;
+        if (platform == 'win32') {
+            plugin_name = 'converter';
+        } else {
+            plugin_name = 'libconverter';
+        }
+        this.plugin_ = new Plugin(plugin_name,
         path.dirname(Plugin.__file__), 
         (data,meta)=>{this.notification(data,meta)}  );
         
