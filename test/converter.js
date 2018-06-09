@@ -9,9 +9,11 @@ class Converter {
         this.lower  = 0
         this.illegal= 0
 
-        this.plugin_ = new Plugin('converter',
+
+        this.plugin_ = new Plugin('case-converter-plugin',
         path.dirname(Plugin.__file__), 
         (data,meta)=>{this.notification(data,meta)}  );
+
         
     }
     initialize(option){
