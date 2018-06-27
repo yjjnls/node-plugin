@@ -1,6 +1,7 @@
 var path = require('path');
 
 var Plugin = require('../index').Plugin
+var os = require('os');
 
 class Converter {
     constructor(notify) {
@@ -9,9 +10,14 @@ class Converter {
         this.lower  = 0
         this.illegal= 0
 
-        this.plugin_ = new Plugin('converter',
+        if(os.platform() == 'linux')
+            this.libname = 'libcase-converter-plugin';
+        else
+            this.libname = 'case-converter-plugin';
+        this.plugin_ = new Plugin(this.libname,
         path.dirname(Plugin.__file__), 
         (data,meta)=>{this.notification(data,meta)}  );
+
         
     }
     initialize(option){
